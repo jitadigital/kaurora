@@ -28,6 +28,8 @@ In addition, there are cells for the callstack and execution substate.
 We've broken up the configuration into two components; those parts of the state that mutate during execution of a single transaction and those that are static throughout.
 In the comments next to each cell, we've marked which component of the YellowPaper state corresponds to each cell.
 
+NEAR-AURORA: add previousNearAccount to configuration (and maybe other useful data)
+
 ```k
     configuration
       <kevm>
@@ -944,6 +946,31 @@ NOTE: We have to call the opcode `OR` by `EVMOR` instead, because K has trouble 
 
 These operators make queries about the current execution state.
 
+NEAR-AURORA: rewrite COINBASE and DIFFICULTY and GASLIMIT
+==========
+rewrite the COINBASE rule below
+https://doc.aurora.dev/evm/opcodes/#coinbase
+This opcode returns the EVM address of the Aurora Engine.
+
+For example, for the Aurora Engine deployment on the aurora account, COINBASE returns 0x4444588443C3a91288c5002483449Aba1054192b.
+Rust code from Aurora:
+
+    fn block_coinbase(&self) -> H160 {
+        H160([
+            0x44, 0x44, 0x58, 0x84, 0x43, 0xC3, 0xa9, 0x12, 0x88, 0xc5, 0x00, 0x24, 0x83, 0x44,
+            0x9A, 0xba, 0x10, 0x54, 0x19, 0x2b,
+        ])
+    }
+==========
+DIFFICULTY 
+This opcode always returns zero as there is no difficulty in NEAR or Aurora.
+
+In the future, if and when EIP-4399 is merged in, this would instead return NEAR's provided randomness value.
+==========
+
+GASLIMIT
+This opcode always returns 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff (2^256-1).
+
 ```k
     syntax NullStackOp ::= "PC" | "GAS" | "GASPRICE" | "GASLIMIT" | "BASEFEE"
  // -------------------------------------------------------------------------
@@ -958,7 +985,7 @@ These operators make queries about the current execution state.
     rule <k> COINBASE   => CB   ~> #push ... </k> <coinbase> CB </coinbase>
     rule <k> TIMESTAMP  => TS   ~> #push ... </k> <timestamp> TS </timestamp>
     rule <k> NUMBER     => NUMB ~> #push ... </k> <number> NUMB </number>
-    rule <k> DIFFICULTY => DIFF ~> #push ... </k> <difficulty> DIFF </difficulty>
+    rule <k> DIFFICULTY => DIFF ~> #push ... </k> <difficulty> 0 </difficulty>
     rule <k> PREVRANDAO => RDAO ~> #push ... </k> <mixHash> RDAO </mixHash>
 
     syntax NullStackOp ::= "ADDRESS" | "ORIGIN" | "CALLER" | "CALLVALUE" | "CHAINID" | "SELFBALANCE"
@@ -993,6 +1020,11 @@ These operators make queries about the current execution state.
 
 The blockhash is calculated here using the "shortcut" formula used for running tests.
 
+https://doc.aurora.dev/evm/opcodes/#block-hash
+NEAR-AURORA: rewrite BLOCKHASH as follows: BLOCKHASH(h: u64) = sha256( 0x00 || chain_id || account_id || h )
+We can hardcode the Aurora testnet for the hackathon
+TODO: rewrite the rules below to implement the OR logic defined as in the comment above.
+Where do we get the account id and the block height?
 ```k
     rule <k> BLOCKHASH N => #blockhash(HASHES, N, HI -Int 1, 0) ~> #push ... </k>
          <number>      HI     </number>
@@ -1801,6 +1833,31 @@ Precompiled Contracts
     rule <k> BLAKE2F => #end EVMC_PRECOMPILE_FAILURE ... </k>
          <callData> DATA </callData>
       requires lengthBytes( DATA ) =/=Int 213
+```
+NEAR Aurora precompiles
+We add support for NEAR Aurora EVM additional precompiles as listed at
+https://doc.aurora.dev/evm/precompiles/
+
+address, name,   gas, input, output
+0xc104f4840573bed437190daf5d2898c2bdf928ac , randomSeed           
+0x723ffbaba940e75e7bf5f6d61dcbf8d9a4de0fd7 , predecessorAccountId 0,   .,                         hash
+0x0a3540f79be10ef14890e87c1a0040a68cc6af71 , getPromiseResults    125, .,                         data
+0x536822d27de53629ef1f84c60555689e9488609f , prepaidGas           0,   .,                         value
+0xe9217bc70b7ed1f598ddd3199e80b093fa71124f , exitToNear           0,   flag,amount,nearAccountId, .
+0xb0bd02f6a392af548bdf1cfaee5dfa0eefcc8eab , exitToEthereum       0,   flag,amount,ethAddress,    .
+
+   rule <k> PREDECESSORACCOUNTID => #end EVMC_SUCCESS ... </k>
+       <output> _ => #parseHexBytes(Sha256bytes(0)) A NEAR HASH HERE, placeholder constant for now </output>
+       <callData> DATA </callData>
+       requires lengthBytes( DATA ) ==Int 0
+
+   rule <k> GETPROMISERESULTS => #end EVMC_SUCCESS ... </k>
+        <output> _ =>  </output>
+        <callData> DATA </callData>
+        requires lengthBytes( DATA ) ==Int 125
+
+```
+
 ```
 
 

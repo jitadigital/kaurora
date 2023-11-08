@@ -1,3 +1,9 @@
+
+ifeq ($(UNAME_S), Darwin)
+SHELL := /usr/local/bin/bash
+PATH := $(pwd)/.build/usr/bin:$(PATH)
+endif
+
 all: poetry
 
 
@@ -173,7 +179,7 @@ media_pdfs := 201710-presentation-devcon3                          \
 
 media/%.pdf: media/%.md media/citations.md
 	@mkdir -p $(dir $@)
-	cat $^ | pandoc --from markdown --filter pandoc-citeproc --to beamer --output $@
+	cat $^ | pandoc --from markdown --citeproc --to beamer --output $@
 
 .PHONY: media-pdf
 media-pdf: $(patsubst %, media/%.pdf, $(media_pdfs))
