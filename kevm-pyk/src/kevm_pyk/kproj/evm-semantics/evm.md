@@ -96,7 +96,7 @@ NEAR-AURORA: add previousNearAccount to configuration (and maybe other useful da
             <block>
               <previousHash>     0      </previousHash>     // I_Hp
               <ommersHash>       0      </ommersHash>       // I_Ho
-              <coinbase>         0      </coinbase>         // I_Hc
+              <coinbase>         389735533978029801287722010258294066327269415211      </coinbase>         // I_Hc
               <stateRoot>        0      </stateRoot>        // I_Hr
               <transactionsRoot> 0      </transactionsRoot> // I_Ht
               <receiptsRoot>     0      </receiptsRoot>     // I_He
@@ -953,6 +953,8 @@ https://doc.aurora.dev/evm/opcodes/#coinbase
 This opcode returns the EVM address of the Aurora Engine.
 
 For example, for the Aurora Engine deployment on the aurora account, COINBASE returns 0x4444588443C3a91288c5002483449Aba1054192b.
+This value in int is 389735533978029801287722010258294066327269415211
+
 Rust code from Aurora:
 
     fn block_coinbase(&self) -> H160 {
@@ -985,7 +987,7 @@ This opcode always returns 0xfffffffffffffffffffffffffffffffffffffffffffffffffff
     rule <k> COINBASE   => CB   ~> #push ... </k> <coinbase> CB </coinbase>
     rule <k> TIMESTAMP  => TS   ~> #push ... </k> <timestamp> TS </timestamp>
     rule <k> NUMBER     => NUMB ~> #push ... </k> <number> NUMB </number>
-    rule <k> DIFFICULTY => DIFF ~> #push ... </k> <difficulty> 0 </difficulty>
+    rule <k> DIFFICULTY => DIFF ~> #push ... </k> <difficulty> DIFF </difficulty>
     rule <k> PREVRANDAO => RDAO ~> #push ... </k> <mixHash> RDAO </mixHash>
 
     syntax NullStackOp ::= "ADDRESS" | "ORIGIN" | "CALLER" | "CALLVALUE" | "CHAINID" | "SELFBALANCE"
@@ -1025,8 +1027,19 @@ NEAR-AURORA: rewrite BLOCKHASH as follows: BLOCKHASH(h: u64) = sha256( 0x00 || c
 We can hardcode the Aurora testnet for the hackathon
 TODO: rewrite the rules below to implement the OR logic defined as in the comment above.
 Where do we get the account id and the block height?
+account id seems to be ACCT_ID
+CHAINID seems to be CID
 ```k
-    rule <k> BLOCKHASH N => #blockhash(HASHES, N, HI -Int 1, 0) ~> #push ... </k>
+    
+```
+the below rule seems to cause a parsing ambiguity around L2187  rule <k> #gasExec(SCHED, JUMP _) => Gmid < SCHED > ... </k> 
+maybe because / at the JUMP point
+    rule <k> BLOCKHASH N => 0 ~> #push ... </k>
+
+in development rule:    rule <k> BLOCKHASH N =>#parseHexBytes(Sha256bytes(0, CID, ACCT_ID, NUM)) ~> #push ...  </k>
+```
+OLD BLOCKHASH code for reference (eth evm not Aurora)
+    rule <k> BLOCKHASH N =>#blockhash(HASHES, N, HI -Int 1, 0) ~> #push ... </k>
          <number>      HI     </number>
          <blockhashes> HASHES </blockhashes>
 
@@ -1037,8 +1050,8 @@ Where do we get the account id and the block height?
     rule #blockhash(ListItem(0) _, _, _, _) => 0
     rule #blockhash(ListItem(H) _, N, N, _) => H
     rule #blockhash(ListItem(_) L, N, HI, A) => #blockhash(L, N, HI -Int 1, A +Int 1) [owise]
-```
 
+``` 
 EVM OpCodes
 -----------
 
@@ -1834,7 +1847,7 @@ Precompiled Contracts
          <callData> DATA </callData>
       requires lengthBytes( DATA ) =/=Int 213
 ```
-NEAR Aurora precompiles
+NEAR-AURORA precompiles
 We add support for NEAR Aurora EVM additional precompiles as listed at
 https://doc.aurora.dev/evm/precompiles/
 

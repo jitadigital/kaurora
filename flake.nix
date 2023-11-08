@@ -75,14 +75,14 @@
             inputs.poetry2nix.lib.mkPoetry2Nix { pkgs = nixpkgs-pyk; };
         in {
           python310-pyk = nixpkgs-pyk.python310;
-          kevm = prev.stdenv.mkDerivation {
-            pname = "kevm";
+          kaurora = prev.stdenv.mkDerivation {
+            pname = "kaurora";
             version = self.rev or "dirty";
             buildInputs = buildInputs final ++ [ final.kevm-pyk ];
             nativeBuildInputs = [ prev.makeWrapper ];
 
             src = prev.stdenv.mkDerivation {
-              name = "kevm-${self.rev or "dirty"}-src";
+              name = "kaurora-${self.rev or "dirty"}-src";
               src = prev.lib.cleanSource
                 (prev.nix-gitignore.gitignoreSourcePure [
                   ./.gitignore
@@ -119,7 +119,7 @@
               mkdir -p $out
               cp -r ./kdist-*/* $out/
               mkdir -p $out/bin
-              makeWrapper ${final.kevm-pyk}/bin/kevm $out/bin/kevm --prefix PATH : ${
+              makeWrapper ${final.kevm-pyk}/bin/kevm $out/bin/kaurora --prefix PATH : ${
                 prev.lib.makeBinPath [
                   prev.which
                   k-framework.packages.${prev.system}.k
@@ -214,9 +214,9 @@
             overlay
           ];
         };
-        kevm = pkgs.kevm;
+        kaurora = pkgs.kaurora;
       in {
-        packages.default = kevm;
+        packages.default = kaurora;
         devShell = pkgs.mkShell {
           buildInputs = buildInputs pkgs
             ++ [ pkgs.poetry-nixpkgs pkgs.foundry-bin ];
@@ -244,11 +244,11 @@
 
         packages = {
           inherit (pkgs) kevm-pyk;
-          inherit kevm;
+          inherit kaurora;
           kevm-test = pkgs.kevm-test;
 
           profile = pkgs.callPackage ./package/nix/profile.nix {
-            inherit kevm;
+            inherit kaurora;
             kore-exec = haskell-backend.packages.${system}."kore:exe:kore-exec";
             src = pkgs.lib.cleanSource (pkgs.nix-gitignore.gitignoreSourcePure [
               ./.gitignore
