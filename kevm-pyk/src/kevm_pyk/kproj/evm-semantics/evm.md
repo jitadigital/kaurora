@@ -1039,17 +1039,22 @@ maybe because / at the JUMP point
 in development rule:    rule <k> BLOCKHASH N =>#parseHexBytes(Sha256bytes(0, CID, ACCT_ID, NUM)) ~> #push ...  </k>
 ```
 OLD BLOCKHASH code for reference (eth evm not Aurora)
-    rule <k> BLOCKHASH N =>#blockhash(HASHES, N, HI -Int 1, 0) ~> #push ... </k>
-         <number>      HI     </number>
-         <blockhashes> HASHES </blockhashes>
+      rule <k> BLOCKHASH N =>#blockhash(0, CID, ACCT_ID, NUM) ~> #push ... </k>
 
-    syntax Int ::= #blockhash ( List , Int , Int , Int ) [function]
+      syntax Int ::= #blockhash ( Int, Int, Int, Int) [function]
+      rule #blockhash(0, CID, ACCT_ID, NUM) => 0
+
+//    rule <k> BLOCKHASH N =>#blockhash(HASHES, N, HI -Int 1, 0) ~> #push ... </k>
+//         <number>      HI     </number>
+//         <blockhashes> HASHES </blockhashes>
+
+//    syntax Int ::= #blockhash ( List , Int , Int , Int ) [function]
  // ---------------------------------------------------------------
-    rule #blockhash(_, N, HI, _) => 0 requires N >Int HI
-    rule #blockhash(_, _, _, 256) => 0
-    rule #blockhash(ListItem(0) _, _, _, _) => 0
-    rule #blockhash(ListItem(H) _, N, N, _) => H
-    rule #blockhash(ListItem(_) L, N, HI, A) => #blockhash(L, N, HI -Int 1, A +Int 1) [owise]
+//    rule #blockhash(_, N, HI, _) => 0 requires N >Int HI
+//    rule #blockhash(_, _, _, 256) => 0
+//    rule #blockhash(ListItem(0) _, _, _, _) => 0
+//    rule #blockhash(ListItem(H) _, N, N, _) => H
+//    rule #blockhash(ListItem(_) L, N, HI, A) => #blockhash(L, N, HI -Int 1, A +Int 1) [owise]
 
 ``` 
 EVM OpCodes
